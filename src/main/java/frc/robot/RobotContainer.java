@@ -44,7 +44,7 @@ public class RobotContainer {
     private double MaxAngularRate = RotationsPerSecond.of(0.25).in(RadiansPerSecond); // 3/4 of a rotation per second max angular velocity
 
     /* Setting up bindings for necessary control of the swerve drive platform */
-    private final SwerveRequest.FieldCentric drive = new SwerveRequest.FieldCentric()
+    private final SwerveRequest.FieldCentric fieldCentric = new SwerveRequest.FieldCentric()
             .withDeadband(MaxSpeed * 0.1).withRotationalDeadband(MaxAngularRate * 0.1) // Add a 10% deadband
             .withDriveRequestType(DriveRequestType.Velocity); // Use open-loop control for drive motors
 
@@ -168,7 +168,7 @@ public class RobotContainer {
 
     public Command getAutonomousCommand() {
         double time_delay = 2; // seconds
-        double speed = 3; // mps
+        double speed = 1; // mps
 // boolean isRed =
 // DriverStation.getAlliance().isPresent()
 // && DriverStation.getAlliance().get() == Alliance.Red;
@@ -177,8 +177,19 @@ public class RobotContainer {
 // }
 
         return 
-            drivetrain.applyRequest(() -> drive.withVelocityX(speed).withVelocityY(0).withRotationalRate(0))
+            drivetrain.applyRequest(
+                () -> fieldCentric
+                .withVelocityX(speed)
+                .withVelocityY(0)
+                .withRotationalRate(0))
               .withTimeout(time_delay);
+            //   .andThen(
+            //     new InstantCommand(() -> setState(ElevatorState.FS))
+            //     // .andThen(new InstantCommand(()->wrist.setSetPoint(14)))
+            //     )
+            //   .andThen(new InstantCommand(() -> {setState(ElevatorState.L2);}))
+            // .andThen(outtakeCoral);
+            // ;
         //return Commands.print("No autonomous command configured");
         //return autoChooser.getSelected();
     }
