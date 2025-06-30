@@ -16,6 +16,7 @@ import com.pathplanner.lib.auto.NamedCommands;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
 import edu.wpi.first.math.controller.ElevatorFeedforward;
+import edu.wpi.first.util.sendable.Sendable;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
@@ -99,6 +100,8 @@ public class RobotContainer {
     }
     */
 
+    private final SendableChooser<Command> autoChooser;
+
     public RobotContainer() {
         
         configureBindings();
@@ -108,6 +111,44 @@ public class RobotContainer {
         autoChooser = AutoBuilder.buildAutoChooser("None");
         SmartDashboard.putData("Auto Chooser", autoChooser);
         */
+
+        autoChooser = new SendableChooser<>();
+
+        Command driveForward = new InstantCommand(() -> {
+            //driveSpeed does not have a default speed so it is multi-applicable
+            double driveSpeed;
+
+            if (DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Blue) {
+                //Blue Alliance wall is positive side of the axis; thus, negative takes the robot away from it
+                driveSpeed = -1;
+            }
+            else if (DriverStation.getAlliance().isPresent() && DriverStation.getAlliance().get() == Alliance.Red) {
+                //Red Alliance wall is negative side of the axis; thus, positive takes the robot away from it
+                driveSpeed = 1;
+            }
+            else {
+                //If no alliance is detected, the robot defaults back to blue
+                driveSpeed = -1;
+            }
+
+            Command driveCommand = drivetrain.applyRequest(
+                () -> fieldCentric
+                .withVelocityX(driveSpeed)
+                .withVelocityY(0)
+                .withRotationalRate(0)
+            ).withTimeout(2);
+
+            driveCommand.schedule();
+        }).withName("Autonomous #1");
+        //we can rename this if you want
+
+        //default auto is nothing
+        autoChooser.setDefaultOption("None", new InstantCommand());
+        
+        //This is our only auto currently, but it's set up to accept more
+        autoChooser.addOption("driveForward", driveForward);
+
+        SmartDashboard.putData("Auto Chooser", autoChooser);
     }
 
     private void configureBindings() {
@@ -153,36 +194,11 @@ public class RobotContainer {
 
         opController.leftBumper().whileTrue(intakeCoral);
         opController.rightBumper().whileTrue(outtakeCoral);
-
-        //autos 
-       
-        //SendableChooser<Command> autoChooser = AutoBuilder.buildAutoChooser();
-
-        //autoChooser.addOption("One Piece Auto", AutoBuilder.buildAuto("One Piece Auto"));
-        //autoChooser.addOption("Leave", AutoBuilder.buildAuto("Leave"));
-        //SmartDashboard.putData("Auto Chooser", autoChooser);
-       
-    
-        
     }
 
     public Command getAutonomousCommand() {
-        double time_delay = 2; // seconds
-        double speed = 1; // mps
-// boolean isRed =
-// DriverStation.getAlliance().isPresent()
-// && DriverStation.getAlliance().get() == Alliance.Red;
-// if (!isRed) {
-//     speed = -3;
-// }
+        return autoChooser.getSelected();
 
-        return 
-            drivetrain.applyRequest(
-                () -> fieldCentric
-                .withVelocityX(speed)
-                .withVelocityY(0)
-                .withRotationalRate(0))
-              .withTimeout(time_delay);
             //   .andThen(
             //     new InstantCommand(() -> setState(ElevatorState.FS))
             //     // .andThen(new InstantCommand(()->wrist.setSetPoint(14)))
